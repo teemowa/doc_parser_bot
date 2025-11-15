@@ -9,8 +9,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Устанавливаем *также* зависимости из самого stamp2vec
-# (Это самый безопасный способ)
 RUN pip install --no-cache-dir -r /app/stamp2vec/requirements.txt
+
+# --- ДОБАВЛЕНО: Копируем наши локальные модели ---
+COPY ./local_models /app/local_models
+# ---------------------------------------------
 
 COPY main.py .
 
