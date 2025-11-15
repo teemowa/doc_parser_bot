@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  # Сервис 1: Бот-оркестратор
+  telegram-bot:
+    build:
+      context: ./telegram_bot
+    container_name: telegram-bot
+    env_file:
+      - ./.env
+    # Теперь зависит только от одного ML-сервиса
+    depends_on:
+      - ml-service
+    restart: always
+
+  # Сервис 2: ЕДИНЫЙ ML-сервис (PyTorch)
+  ml-service:
+    build:
+      context: ./ml_service
+    container_name: ml-service
+    expose:
+      - "8000"
+    restart: always
+  

@@ -1,0 +1,20 @@
+# Виртуальные среды Python
+.venv/
+venv/
+
+# Секреты (ОЧЕНЬ ВАЖНО)
+.env
+
+# Кэш и артефакты Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Кэш IDE и OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Мы не хотим отслеживать историю вложенного репозитория
+ml_service/stamp2vec/.git
