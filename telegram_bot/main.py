@@ -139,7 +139,8 @@ async def process_pdf_and_generate_reports(pdf_bytes, file_name, update: Update)
         final_json[file_name][page_key] = {"page_size": page_size_json, "annotations": annotations_json}
     
     # --- Генерация отчетов (БЕЗ ИЗМЕНЕНИЙ) ---
-    annotated_pdf_bytes = doc.save(garbage=4, deflate=True)
+    # --- ПРАВИЛЬНО ---
+    annotated_pdf_bytes = doc.tobytes(garbage=4, deflate=True)
     doc.close()
     heatmap_bytes = generate_heatmap(all_annotations_for_heatmap, page_dimensions_for_heatmap)
     

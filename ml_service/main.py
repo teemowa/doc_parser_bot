@@ -11,7 +11,6 @@ from PIL import Image
 
 # --- Настройка для stamp2vec ---
 sys.path.append('/app/stamp2vec')
-# --- Используем YoloStampPipeline (которая работает) ---
 from pipelines.detection.yolo_stamp import YoloStampPipeline 
 
 logging.basicConfig(level=logging.INFO)
@@ -21,7 +20,7 @@ models = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Загружаем ВСЕ 4 модели при старте
-    logger.info("Загрузка всех ML моделей...")
+    logger.info("Загрузка всех ML моделей (из интернета)...")
     
     # --- Эти 2 модели грузим локально ---
     models['signature'] = YOLO("/app/local_models/signature_model.pt")
@@ -29,9 +28,8 @@ async def lifespan(app: FastAPI):
     
     models['qr'] = QRDetector() # Эта модель встроена в pip-пакет
     
-    # --- Эту 1 модель грузим из интернета (т.к. на сервере есть DNS) ---
+    # --- Эту 1 модель грузим из интернета ---
     try:
-        # Используем 'from_pretrained', как она и была задумана
         models['stamp'] = YoloStampPipeline.from_pretrained('stamps-labs/yolo-stamp')
         logger.info("Модель stamp2vec (YoloStampPipeline) загружена.")
     except Exception as e:
@@ -61,13 +59,14 @@ async def detect_all_objects(file: UploadFile = File(...)):
 
         # --- 3: Модель QR-кодов ---
         qr_results = models['qr'].detect(img_bgr, is_bgr=True)
-        qr_codes = [d['bbox'] for d in qr_results] # [x1, y1, x2, y2]
+        # --- ИСПРАВЛЕНО: 'bbox' -> 'bbox_xyxy' ---
+        qr_codes = [d['bbox_xyxy'] for d in qr_results] # [x1, y1, x2, y2]
 
         # --- 4: Модель Печатей (stamp2vec) ---
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
         img_pil = Image.fromarray(img_rgb)
         
-        # Вызываем модель (судя по тестам, `pipe(image=...)` работает)
+        # --- ИСПРАВЛЕНО: model(image=img_pil) ---
         stamp_boxes_tensor = models['stamp'](image=img_pil) 
         stamps = stamp_boxes_tensor.cpu().numpy().tolist()
 
