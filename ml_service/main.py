@@ -11,7 +11,8 @@ from PIL import Image
 
 # --- Настройка для stamp2vec ---
 sys.path.append('/app/stamp2vec')
-from pipelines.detection.yolo_v8 import Yolov8Pipeline 
+# --- ИСПРАВЛЕНО: Импортируем YoloStampPipeline ---
+from pipelines.detection.yolo_stamp import YoloStampPipeline 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -22,18 +23,15 @@ async def lifespan(app: FastAPI):
     # Загружаем ВСЕ 4 модели при старте
     logger.info("Загрузка всех ML моделей...")
     
-    # --- ИЗМЕНЕНО: Загружаем из локальных файлов ---
+    # --- ИСПРАВЛЕНО: Все 3 "тяжелые" модели грузим локально ---
     models['signature'] = YOLO("/app/local_models/signature_model.pt")
     models['table'] = YOLO("/app/local_models/table_model.pt")
-    # ----------------------------------------------
+    models['qr'] = QRDetector() # Эта модель встроена в pip-пакет, все ОК
     
-    models['qr'] = QRDetector()
-    
-    # --- НАСТОЯЩАЯ МОДЕЛЬ STAMP2VEC ---
-    # Оставим эту как есть. Если она тоже упадет, мы ее скачаем так же.
     try:
-        models['stamp'] = Yolov8Pipeline.from_pretrained('stamps-labs/yolov8-finetuned')
-        logger.info("Модель stamp2vec (Yolov8Pipeline) загружена.")
+        # Мы используем правильный класс и правильный .pt файл
+        models['stamp'] = YoloStampPipeline(model_path="/app/local_models/stamp_model.pt")
+        logger.info("Модель stamp2vec (YoloStampPipeline) загружена.")
     except Exception as e:
         logger.error(f"!!! ОШИБКА ЗАГРУЗКИ STAMP2VEC: {e}")
 
@@ -67,7 +65,9 @@ async def detect_all_objects(file: UploadFile = File(...)):
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
         img_pil = Image.fromarray(img_rgb)
         
-        stamp_boxes_tensor = models['stamp'](image=img_pil)
+        # --- ИСПРАВЛЕНО: Вызываем .process() или .__call__() ---
+        # (Судя по тестам, вызов `pipe(image=...)` работает)
+        stamp_boxes_tensor = models['stamp'](image=img_pil) 
         stamps = stamp_boxes_tensor.cpu().numpy().tolist()
 
         return {
