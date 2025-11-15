@@ -60,14 +60,17 @@ async def detect_all_objects(file: UploadFile = File(...)):
         # --- 3: Модель QR-кодов ---
         qr_results = models['qr'].detect(img_bgr, is_bgr=True)
         # --- ИСПРАВЛЕНО: 'bbox' -> 'bbox_xyxy' ---
-        qr_codes = [d['bbox_xyxy'] for d in qr_results] # [x1, y1, x2, y2]
+        # И добавляем проверку, что qr_results не пустой
+        qr_codes = []
+        if qr_results:
+            qr_codes = [d['bbox_xyxy'] for d in qr_results] # [x1, y1, x2, y2]
 
         # --- 4: Модель Печатей (stamp2vec) ---
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-        img_pil = Image.fromarray(img_rgb)
         
-        # --- ИСПРАВЛЕНО: model(image=img_pil) ---
-        stamp_boxes_tensor = models['stamp'](image=img_pil) 
+        # --- ИСПРАВЛЕНО: model(image=...) и передаем numpy массив ---
+        # Эта модель ожидает numpy массив, а не PIL Image
+        stamp_boxes_tensor = models['stamp'](image=img_rgb) 
         stamps = stamp_boxes_tensor.cpu().numpy().tolist()
 
         return {
