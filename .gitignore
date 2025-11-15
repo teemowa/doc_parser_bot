@@ -18,3 +18,4 @@ Thumbs.db
 
 # Мы не хотим отслеживать историю вложенного репозитория
 ml_service/stamp2vec/.git
+ml_service/local_models/
