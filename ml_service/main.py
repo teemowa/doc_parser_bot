@@ -19,16 +19,13 @@ models = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Загружаем ВСЕ 4 модели при старте
+    # Загрузка всех моделей (Успешно)
     logger.info("Загрузка всех ML моделей (из интернета)...")
     
-    # --- Эти 2 модели грузим локально ---
     models['signature'] = YOLO("/app/local_models/signature_model.pt")
     models['table'] = YOLO("/app/local_models/table_model.pt")
+    models['qr'] = QRDetector()
     
-    models['qr'] = QRDetector() # Эта модель встроена в pip-пакет
-    
-    # --- Эту 1 модель грузим из интернета ---
     try:
         models['stamp'] = YoloStampPipeline.from_pretrained('stamps-labs/yolo-stamp')
         logger.info("Модель stamp2vec (YoloStampPipeline) загружена.")
@@ -59,14 +56,17 @@ async def detect_all_objects(file: UploadFile = File(...)):
 
         # --- 3: Модель QR-кодов ---
         qr_results = models['qr'].detect(img_bgr, is_bgr=True)
-        # --- ИСПРАВЛЕНО: 'bbox' -> 'bbox_xyxy' и добавлена проверка ---
         qr_codes = []
+        # --- ИСПРАВЛЕНО: Используем явную проверку float 'confidence' ---
         if qr_results:
-            qr_codes = [d['bbox_xyxy'] for d in qr_results if d.get('bbox_xyxy')]
+            for d in qr_results:
+                # Если confidence (уверенность) - это число (т.е. объект найден)
+                if d.get('confidence') is not None and isinstance(d['confidence'], (float, int)): 
+                    qr_codes.append(d['bbox_xyxy'])
+        # -----------------------------------------------------------------
 
         # --- 4: Модель Печатей (stamp2vec) ---
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-        # --- ИСПРАВЛЕНО: Передаем PIL Image ---
         img_pil = Image.fromarray(img_rgb)
         
         stamp_boxes_tensor = models['stamp'](image=img_pil) 
