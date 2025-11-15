@@ -11,7 +11,7 @@ from PIL import Image
 
 # --- Настройка для stamp2vec ---
 sys.path.append('/app/stamp2vec')
-# --- ИСПРАВЛЕНО: Импортируем YoloStampPipeline ---
+# --- Используем YoloStampPipeline (которая работает) ---
 from pipelines.detection.yolo_stamp import YoloStampPipeline 
 
 logging.basicConfig(level=logging.INFO)
@@ -23,14 +23,16 @@ async def lifespan(app: FastAPI):
     # Загружаем ВСЕ 4 модели при старте
     logger.info("Загрузка всех ML моделей...")
     
-    # --- ИСПРАВЛЕНО: Все 3 "тяжелые" модели грузим локально ---
+    # --- Эти 2 модели грузим локально ---
     models['signature'] = YOLO("/app/local_models/signature_model.pt")
     models['table'] = YOLO("/app/local_models/table_model.pt")
-    models['qr'] = QRDetector() # Эта модель встроена в pip-пакет, все ОК
     
+    models['qr'] = QRDetector() # Эта модель встроена в pip-пакет
+    
+    # --- Эту 1 модель грузим из интернета (т.к. на сервере есть DNS) ---
     try:
-        # Мы используем правильный класс и правильный .pt файл
-        models['stamp'] = YoloStampPipeline(model_path="/app/local_models/stamp_model.pt")
+        # Используем 'from_pretrained', как она и была задумана
+        models['stamp'] = YoloStampPipeline.from_pretrained('stamps-labs/yolo-stamp')
         logger.info("Модель stamp2vec (YoloStampPipeline) загружена.")
     except Exception as e:
         logger.error(f"!!! ОШИБКА ЗАГРУЗКИ STAMP2VEC: {e}")
@@ -65,8 +67,7 @@ async def detect_all_objects(file: UploadFile = File(...)):
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
         img_pil = Image.fromarray(img_rgb)
         
-        # --- ИСПРАВЛЕНО: Вызываем .process() или .__call__() ---
-        # (Судя по тестам, вызов `pipe(image=...)` работает)
+        # Вызываем модель (судя по тестам, `pipe(image=...)` работает)
         stamp_boxes_tensor = models['stamp'](image=img_pil) 
         stamps = stamp_boxes_tensor.cpu().numpy().tolist()
 

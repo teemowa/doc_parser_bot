@@ -18,5 +18,8 @@ services:
     container_name: ml-service
     expose:
       - "8000"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     restart: always
   
