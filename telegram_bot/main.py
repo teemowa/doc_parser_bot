@@ -34,9 +34,12 @@ CV_COLORS = {
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Привет! Отправь мне PDF-документ. Я найду на нем:\n"
-        "- Подписи\n- Таблицы\n- QR-коды\n- Печати\n\n"
-        "И пришлю в ответ PDF-отчет и тепловую карту."
+        "Добро пожаловать!\n\n"
+        "Отправьте мне PDF-документ, и я найду на нём:\n"
+        "• Подписи\n"
+        "• QR-коды\n"
+        "• Печати\n\n"
+        "В ответ вы получите PDF-отчёт с пометками и тепловую карту."
     )
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -45,7 +48,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Пожалуйста, прикрепите документ в формате PDF.")
         return
 
-    await update.message.reply_text(f"Получил ваш PDF: {file_name}\nНачинаю обработку... Это может занять несколько минут.")
+    await update.message.reply_text(f"Получил ваш PDF: {file_name}\nНачинаю обработку.")
 
     try:
         pdf_file = await context.bot.get_file(update.message.document.file_id)
@@ -60,7 +63,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_document(
                 chat_id=update.effective_chat.id,
                 document=annotated_pdf_file,
-                caption="Идея 2: Ваш PDF-документ с пометками."
+                caption="Ваш PDF-документ с пометками."
             )
         
         # --- ИСПРАВЛЕНО: Отправляем heatmap как ДОКУМЕНТ, а не ФОТО ---
@@ -70,7 +73,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_document(
                 chat_id=update.effective_chat.id,
                 document=heatmap_file,
-                caption="Идея 3: Тепловая карта найденных объектов."
+                caption="Тепловая карта найденных объектов."
             )
         # -----------------------------------------------------------
 
