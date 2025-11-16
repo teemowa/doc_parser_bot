@@ -6,10 +6,15 @@ services:
     container_name: telegram-bot
     env_file:
       - ./.env
-    # Теперь зависит только от одного ML-сервиса
     depends_on:
-      - ml-service
+      ml-service:
+        condition: service_healthy
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Сервис 2: ЕДИНЫЙ ML-сервис (PyTorch)
   ml-service:
@@ -21,5 +26,30 @@ services:
     dns:
       - 8.8.8.8
       - 8.8.4.4
+    environment:
+      - SIGNATURE_CONF=${SIGNATURE_CONF:-0.15}
+      - TABLE_CONF=${TABLE_CONF:-0.15}
+      - QR_CONF=${QR_CONF:-0.3}
+      - STAMP_CIRCULAR_CONF=${STAMP_CIRCULAR_CONF:-0.20}
+      - STAMP_RECTANGULAR_CONF=${STAMP_RECTANGULAR_CONF:-0.20}
+      - STAMP_TABLE_IOU_THRESHOLD=${STAMP_TABLE_IOU_THRESHOLD:-0.3}
+      - QR_UPSCALE_FACTOR=${QR_UPSCALE_FACTOR:-2.5}
+      - QR_ENHANCE_IMAGE=${QR_ENHANCE_IMAGE:-true}
+      - QR_MODEL_SIZE=${QR_MODEL_SIZE:-l}
+    volumes:
+      - huggingface-cache:/root/.cache/huggingface
     restart: always
-  
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s = socket.socket(); s.connect(('localhost', 8000)); s.close()"]
+      interval: 15s
+      timeout: 10s
+      retries: 40
+      start_period: 300s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  huggingface-cache:

@@ -7,11 +7,10 @@ numpy
 
 # --- CPU-only ML-пакеты ---
 ultralytics
-qrdet
 torch --index-url https://download.pytorch.org/whl/cpu
 torchvision --index-url https://download.pytorch.org/whl/cpu
 
-# --- Зависимости для stamp2vec (из их requirements.txt) ---
-# Мы не знаем их все, но `transformers` и `timm` почти наверняка нужны
+# --- Зависимости для моделей ---
+huggingface_hub
+qrdet
 transformers
-timm
